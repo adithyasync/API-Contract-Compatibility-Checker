@@ -1,0 +1,357 @@
+
+import { useState } from "react";
+import "./App.css";
+
+type CompatibilityIssue = {
+  operation: string;
+  message: string;
+  severity: "breaking";
+  category: "operation" | "parameter" | "response" | "request-body";
+};
+
+type CompatibilityReport = {
+  oldVersion: string;
+  newVersion: string;
+  compatible: boolean;
+  summary: {
+    totalIssues: number;
+    breakingChanges: number;
+  };
+  issues: CompatibilityIssue[];
+};
+
+function App() {
+  const [oldFile, setOldFile] = useState<File | null>(null);
+  const [newFile, setNewFile] = useState<File | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [report, setReport] = useState<CompatibilityReport | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function compareContracts() {
+    if (!oldFile || !newFile) {
+      setError("Please select both OpenAPI specification files.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setReport(null);
+
+    const formData = new FormData();
+    formData.append("oldSpec", oldFile);
+    formData.append("newSpec", newFile);
+
+    try {
+      const response = await fetch(
+        "http://localhost:3000/api/compatibility/check",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.details ?? data.error ?? "Comparison failed.");
+      }
+
+      setReport(data as CompatibilityReport);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to connect to the API server."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+  
+  const filteredIssues = (report?.issues ?? []).filter((issue) => {
+  const query = searchTerm.toLowerCase().trim();
+
+  const matchesSearch =
+    issue.operation.toLowerCase().includes(query) ||
+    issue.message.toLowerCase().includes(query) ||
+    issue.category.toLowerCase().includes(query);
+
+    const matchesCategory =
+      categoryFilter === "all" ||
+      issue.category === categoryFilter;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  
+  function downloadReport(format: "json" | "markdown") {
+    if (!report) return;
+
+    let content: string;
+    let mimeType: string;
+    let extension: string;
+
+    if (format === "json") {
+      content = JSON.stringify(report, null, 2);
+      mimeType = "application/json";
+      extension = "json";
+    } else {
+      const findings = report.issues.length
+        ? report.issues
+            .map(
+              (issue, index) =>
+                `${index + 1}. **[${issue.category.toUpperCase()}] ${issue.operation}**\n` +
+                `   - Severity: ${issue.severity}\n` +
+                `   - Finding: ${issue.message}`
+            )
+            .join("\n\n")
+        : "No compatibility issues detected.";
+
+      content = [
+        "# API Contract Guardian — Compatibility Report",
+        "",
+        `- **Old version:** ${report.oldVersion}`,
+        `- **New version:** ${report.newVersion}`,
+        `- **Compatible:** ${report.compatible ? "Yes" : "No"}`,
+        `- **Total issues:** ${report.summary.totalIssues}`,
+        `- **Breaking changes:** ${report.summary.breakingChanges}`,
+        "",
+        "## Findings",
+        "",
+        findings,
+        "",
+      ].join("\n");
+
+      mimeType = "text/markdown";
+      extension = "md";
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `api-compatibility-report.${extension}`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+
+  return (
+    <main className="app-shell">
+      <header className="topbar">
+        <a className="brand" href="/">
+          <span className="brand-icon">G</span>
+          <span>API Contract Guardian</span>
+        </a>
+        <span className="status">
+          <span className="status-dot" />
+          Contract analysis
+        </span>
+      </header>
+
+      <section className="hero">
+        <p className="eyebrow">API QUALITY · COMPATIBILITY · CONFIDENCE</p>
+        <h1>Catch breaking changes<br />before they reach production.</h1>
+        <p className="hero-description">
+          Compare two OpenAPI contracts and identify changes that could break
+          existing API consumers.
+        </p>
+      </section>
+
+      <section className="comparison-panel">
+        <div className="section-heading">
+          <div>
+            <h2>Compare contracts</h2>
+            <p>Choose the current contract and the proposed version.</p>
+          </div>
+          <span className="file-format">OpenAPI · YAML / JSON</span>
+        </div>
+
+        <div className="upload-grid">
+          <label className="upload-card">
+            <span className="upload-icon">01</span>
+            <strong>Current contract</strong>
+            <span className="upload-description">
+              The existing API specification
+            </span>
+            <input
+              type="file"
+              accept=".yaml,.yml,.json,application/json"
+              onChange={(event) =>
+                setOldFile(event.target.files?.[0] ?? null)
+              }
+            />
+            <span className="file-name">
+              {oldFile ? oldFile.name : "Choose a file"}
+            </span>
+          </label>
+
+          <label className="upload-card">
+            <span className="upload-icon">02</span>
+            <strong>Proposed contract</strong>
+            <span className="upload-description">
+              The version you want to validate
+            </span>
+            <input
+              type="file"
+              accept=".yaml,.yml,.json,application/json"
+              onChange={(event) =>
+                setNewFile(event.target.files?.[0] ?? null)
+              }
+            />
+            <span className="file-name">
+              {newFile ? newFile.name : "Choose a file"}
+            </span>
+          </label>
+        </div>
+
+        <button
+          className="compare-button"
+          onClick={compareContracts}
+          disabled={loading}
+        >
+          {loading ? "Comparing contracts..." : "Compare contracts →"}
+        </button>
+
+        {error && <p className="error-message">{error}</p>}
+      </section>
+
+      {report && (
+        <section className="results">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">ANALYSIS RESULTS</p>
+              <h2>Compatibility report</h2>
+              
+              <div className="export-actions">
+                <button
+                  className="export-button"
+                  onClick={() => downloadReport("json")}
+                >
+                  Download JSON ↓
+                </button>
+
+                <button
+                  className="export-button"
+                  onClick={() => downloadReport("markdown")}
+                >
+                  Download Markdown ↓
+                </button>
+              </div>
+
+              <p>
+                {report.oldVersion} → {report.newVersion}
+              </p>
+            </div>
+            <span
+              className={`result-status ${
+                report.compatible ? "compatible" : "incompatible"
+              }`}
+            >
+              {report.compatible ? "Compatible" : "Breaking changes found"}
+            </span>
+          </div>
+
+          <div className="stats-grid">
+            <article className="stat-card">
+              <span>Total issues</span>
+              <strong>{report.summary.totalIssues}</strong>
+            </article>
+            <article className="stat-card">
+              <span>Breaking changes</span>
+              <strong>{report.summary.breakingChanges}</strong>
+            </article>
+            <article className="stat-card">
+              <span>Compatibility</span>
+              <strong>{report.compatible ? "Pass" : "Fail"}</strong>
+            </article>
+          </div>
+          <div className="issues-panel">
+            <div className="issues-toolbar">
+              <div>
+                <h3>Detected changes</h3>
+                <p className="results-count">
+                  Showing {filteredIssues.length} of {report.issues.length} findings
+                </p>
+              </div>
+
+              <div className="filter-controls">
+                <input
+                  className="search-input"
+                  type="search"
+                  placeholder="Search endpoints or findings..."
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  aria-label="Search compatibility findings"
+                />
+
+                <select
+                  className="category-select"
+                  value={categoryFilter}
+                  onChange={(event) => setCategoryFilter(event.target.value)}
+                  aria-label="Filter findings by category"
+                >
+                  <option value="all">All categories</option>
+                  <option value="operation">Operations</option>
+                  <option value="parameter">Parameters</option>
+                  <option value="response">Responses</option>
+                  <option value="request-body">Request bodies</option>
+                </select>
+              </div>
+            </div>
+            {report.issues.length === 0 ? (
+              <p className="empty-state">
+                No breaking changes detected between these contracts.
+              </p>
+            ) : filteredIssues.length === 0 ? (
+              <p className="empty-state">
+                No findings match your search or selected category.
+              </p>
+            ) : (
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th>Operation</th>
+                      <th>Finding</th>
+                      <th>Severity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredIssues.map((issue, index) => (
+                      <tr key={`${issue.operation}-${index}`}>
+                        <td>
+                          <span className="category">
+                            {issue.category}
+                          </span>
+                        </td>
+                        <td className="operation">{issue.operation}</td>
+                        <td>{issue.message}</td>
+                        <td>
+                          <span className="severity">
+                            {issue.severity}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      <footer>
+        API Contract Guardian <span>·</span> OpenAPI compatibility analysis
+      </footer>
+    </main>
+  );
+}
+
+export default App;

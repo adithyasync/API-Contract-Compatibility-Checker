@@ -1,0 +1,31 @@
+
+openapi: 3.0.3
+info:
+  title: Request Body Reference Test
+  version: 1.0.0
+
+paths:
+  /products:
+    post:
+      summary: Create product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+      responses:
+        "201":
+          description: Created
+
+components:
+  schemas:
+    Product:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        price:
+          type: number

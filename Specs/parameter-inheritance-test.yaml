@@ -1,0 +1,20 @@
+
+openapi: 3.0.3
+info:
+  title: Parameter Inheritance Test
+  version: 1.0.0
+
+paths:
+  /products/{productId}:
+    parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      summary: Get a product
+      responses:
+        "200":
+          description: Product found

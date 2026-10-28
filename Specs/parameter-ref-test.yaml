@@ -1,0 +1,24 @@
+
+openapi: 3.0.3
+info:
+  title: Parameter Reference Test
+  version: 1.0.0
+
+paths:
+  /products/{productId}:
+    get:
+      summary: Get product
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "200":
+          description: Product found
+
+components:
+  parameters:
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      schema:
+        type: string

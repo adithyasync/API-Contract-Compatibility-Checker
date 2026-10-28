@@ -1,0 +1,80 @@
+
+openapi: 3.0.3
+
+info:
+  title: Product API
+  version: 1.0.0
+  description: Original product management API
+
+servers:
+  - url: https://api.example.com
+
+paths:
+  /products:
+    get:
+      summary: Get all products
+      operationId: getProducts
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of products
+
+    post:
+      summary: Create a product
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                price:
+                  type: number
+      responses:
+        "201":
+          description: Product created
+
+  /products/{id}:
+    get:
+      summary: Get a product by ID
+      operationId: getProductById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Product found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  price:
+                    type: number
+        "404":
+          description: Product not found
+
+  /categories:
+    get:
+      summary: Get all categories
+      operationId: getCategories
+      responses:
+        "200":
+          description: List of categories

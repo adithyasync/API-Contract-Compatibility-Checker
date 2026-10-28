@@ -1,0 +1,26 @@
+
+openapi: 3.0.3
+info:
+  title: Response Reference Test
+  version: 1.0.0
+
+paths:
+  /products/{productId}:
+    get:
+      responses:
+        "200":
+          description: Product found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string

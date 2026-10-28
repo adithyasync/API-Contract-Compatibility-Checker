@@ -1,0 +1,98 @@
+Initial Compatibility Rules:
+
+                Rule	----------------------                         Initial expected classification
+                Endpoint removed	----------                         Breaking
+                Required request parameter added	--                 Breaking
+                Required request field added	-------                Breaking
+                Response field removed	                               Breaking
+                Response field type changed	                           Potentially breaking
+                Optional response field added	                       Usually compatible
+                New optional query parameter added	                   Usually compatible
+                HTTP response status removed	                       Depends on how clients use it
+                Authentication requirements tightened	               Potentially breaking
+
+
+Possible Cases:
+
+                --> A valid OpenAPI file that describes a breaking change.
+
+                --> A malformed YAML file that cannot be parsed.
+
+                --> A syntactically valid OpenAPI file with an invalid or unresolved reference.
+
+                --> A valid specification whose API is implemented incorrectly.
+
+tests/
+└── fixtures/
+    ├── identical/
+    │   ├── old.yaml
+    │   └── new.yaml
+    ├── response-field-removed/
+    │   ├── old.yaml
+    │   └── new.yaml
+    ├── optional-field-added/
+    │   ├── old.yaml
+    │   └── new.yaml
+    ├── field-type-changed/
+    │   ├── old.yaml
+    │   └── new.yaml
+    └── required-request-field-added/
+        ├── old.yaml
+        └── new.yaml
+
+
+    server/src/
+    ├── parser/
+    │   └── load-openapi.ts
+    ├── normalizer/
+    │   └── operation-map.ts
+    ├── diff-engine/
+    │   ├── compare-specs.ts
+    │   ├── compare-operations.ts
+    │   └── compare-schemas.ts
+    ├── compatibility-rules/
+    │   ├── endpoint-rules.ts
+    │   ├── request-rules.ts
+    │   └── response-rules.ts
+    ├── report/
+    │   └── build-report.ts
+    └── types/
+        └── compatibility.ts
+
+    tests/
+    ├── fixtures/
+    └── unit/
+
+
+    
+api-contract-guardian/
+├── client/
+│   └── src/
+│       ├── components/
+│       ├── pages/
+│       ├── api/
+│       └── types/
+│
+├── server/
+│   └── src/
+│       ├── routes/
+│       ├── middleware/
+│       ├── services/
+│       ├── parser/
+│       ├── diff-engine/
+│       ├── compatibility-rules/
+│       ├── report/
+│       └── types/
+│
+├── tests/
+│   ├── fixtures/
+│   │   ├── compatible/
+│   │   └── breaking/
+│   ├── unit/
+│   └── integration/
+│
+├── docs/
+│   ├── architecture.md
+│   └── compatibility-rules.md
+│
+└── README.md
