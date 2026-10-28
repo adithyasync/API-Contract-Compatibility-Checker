@@ -215,7 +215,7 @@ app.use(
   }
 );
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(
     `API Contract Guardian API running at http://localhost:${PORT}`
   );
