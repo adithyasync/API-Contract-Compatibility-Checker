@@ -26,3 +26,6 @@ coverage/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Unnecessary local folder
+/Information/

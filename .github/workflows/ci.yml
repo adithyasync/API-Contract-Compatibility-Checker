@@ -1,0 +1,45 @@
+
+name: API Contract Guardian CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Type-check, test, and build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check backend
+        run: npm run typecheck
+
+      - name: Run backend tests
+        run: >
+          npx tsx --test
+          server/src/parser/operationExtractor.test.ts
+          server/src/compatibility/requestChecker.test.ts
+          server/src/compatibility/responseChecker.test.ts
+          server/src/compatibility/requestBodyChecker.test.ts
+          server/src/compatibility/requestBodyRef.test.ts
+          server/src/compatibility/responseRef.test.ts
+
+      - name: Build frontend
+        run: |
+          cd client
+          npm ci
+          npm run build
