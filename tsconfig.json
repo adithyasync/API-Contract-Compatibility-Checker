@@ -1,17 +1,15 @@
-
 {
   "compilerOptions": {
     "module": "nodenext",
     "target": "esnext",
+    "rootDir": "./server/src",
+    "outDir": "./dist",
     "types": ["node"],
-
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-
     "strict": true,
     "jsx": "react-jsx",
     "verbatimModuleSyntax": true,
